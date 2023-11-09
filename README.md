@@ -9,3 +9,9 @@ Software Engineering Group Laboratory Assignment
 - Коваленко Мария
 - Ли Алина
 - Шевяхов Артём
+
+## Инструкция по запуску
+1. Создайте файл с расширением `.env`.
+2. Добавьте эту переменную в файл `.env`: `BOT_API_TOKEN=[YOUR_TELEGRAM_BOT_API_TOKEN]`, и замените `[YOUR_TELEGRAM_BOT_API_TOKEN]` на ваш токен чат-бота.
+3. Откройте терминал и запустите эту комманду: `pip install -r requirements.txt` чтобы установить все необходимые библиотеки для этого проекта.
+4. Запустите эту комманду для запуска программы: `python3 main.py`.
