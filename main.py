@@ -1,13 +1,15 @@
 import telegram
 from telegram import Update
-from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
 
 from utils import get_tg_bot_token
 from command_handlers import *
+from API_helper import APIHelper
 
 tg_token = get_tg_bot_token()
 bot = telegram.Bot(token=tg_token)
+
+helper = APIHelper()
 
 def handle_response(text: str) -> str:
     parsed = text.lower()
@@ -36,12 +38,21 @@ if __name__ == '__main__':
     print('Bot is starting')
     app = Application.builder().token(tg_token).build()
 
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('info', info_command)],
+        states={
+            1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_info_message)],
+            2: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_multiple_symbol_message)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel_command)]
+    )
+
     # commands
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('list', list_crypto_command))
     app.add_handler(CommandHandler('predict', predict_command))
-    app.add_handler(CommandHandler('info', info_command))
+    app.add_handler(conv_handler)
 
     # messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
