@@ -4,12 +4,12 @@ from utils import get_cg_token
 from models import *
 
 class APIHelper:
-    _BASE_URL = 'https://coingecko.p.rapidapi.com'
+    _BASE_URL = 'https://api.coingecko.com/api/v3'
     _TOKEN = get_cg_token()
 
     # HEADERS
     _HEADERS = {
-        'X-RapidAPI-Key': _TOKEN
+        'x-cg-demo-api-key': _TOKEN
     }
 
     # ENDPOINTS
@@ -51,6 +51,7 @@ class APIHelper:
             return []
 
         response_json = response.json()
+        print(response_json)
 
         top_100 = []
         for coin in response_json:
