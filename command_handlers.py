@@ -122,6 +122,11 @@ async def handle_predict_message(update: Update, context: ContextTypes.DEFAULT_T
         token: TokenModel = tokens_list[0]
         market: MarketModel = helper.get_price(token_id=token.id)
 
+        if not market:
+            response = "Error in server, please try again a bit later."
+            await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+
         prediction = "rise" if market.price_change_percentage_24h >= 0.0 else "drop"
         response = f"Price of {market.symbol.upper()} – {market.name} will {prediction}!"
         print(f"Bot: {response}")
@@ -148,6 +153,11 @@ async def handle_multiple_symbol_predict_message(update: Update, context: Contex
         await update.message.reply_text('Token with that name is not found. Please choose one of the option from the inline keyboard!')
 
     market: MarketModel = helper.get_price(token_id=token.id)
+
+    if not market:
+        response = "Error in server, please try again a bit later."
+        await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
 
     prediction = "rise" if market.price_change_percentage_24h >= 0.0 else "drop"
     response = f"Price of {market.symbol.upper()} – {market.name} will {prediction}!"
@@ -221,10 +231,12 @@ async def handle_info_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     if len(tokens_list) == 1:
         token: TokenModel = tokens_list[0]
         market: MarketModel = helper.get_price(token_id=token.id)
-        # data = open('market_sample_data.json', 'r')
-        # json_data = json.load(data)
-        # market = MarketModel(**json_data[0])
-        # print(market)
+        
+        if not market:
+            response = "Error in server, please try again a bit later."
+            await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+
         price_change_symbol = '+' if market.price_change_percentage_24h > 0.0 else ''
         response = f"""
 Here are the price info of token {market.symbol.upper()} – {market.name}:
@@ -257,6 +269,11 @@ async def handle_multiple_symbol_info_message(update: Update, context: ContextTy
         await update.message.reply_text('Token with that name is not found. Please choose one of the option from the inline keyboard!')
 
     market: MarketModel = helper.get_price(token_id=token.id)
+
+    if not market:
+        response = "Error in server, please try again a bit later."
+        await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
 
     price_change_symbol = '+' if market.price_change_percentage_24h > 0.0 else ''
     response = f"""
