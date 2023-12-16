@@ -41,9 +41,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     • After you get the necessary information the bot will stop the conversation and will only be able to check again when you use one of these commands: /info /predict\.
         
-    • If you want to cancel the checking process you can use command /cancel or press the command from inline keyboard located under your input box\. You can cancel the process from any step\.
+    • If you want to cancel the checking process you can use command /cancel or type "cancel" or press the command from inline keyboard located under your input box\. You can cancel the process from any step\.
         
-PS: If the name or symbol of cryptocurrency that you have entered doesn't exist then bot will send you an error message but bot will still be in conversation and you can send the correct or existing cryptocurrency name or symbol, or you can send word "Cancel" or use command /cancel to cancel checking and exit the conversation\.
+PS: If the name or symbol of cryptocurrency that you have entered doesn't exist then bot will send you an error message but bot will still be in conversation and you can send the correct or existing cryptocurrency name or symbol, or you can send word "cancel" or use command /cancel to cancel checking and exit the conversation\.
     
 2\. If you want to check the list of top 100 cryptocurrencies then use command /list\.     
 """
@@ -61,7 +61,7 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = """
 This command will return price prediction of a specific cryptocurrency whether it will rise or drop in the next 24 hours.
 Please type in symbol or name of cryptocurrency you want to check.
-Press /cancel or type Cancel to cancel finding information about currency.
+Press /cancel or type "cancel" to cancel finding information about currency.
 """
     await update.message.reply_text(
         response, 
@@ -82,7 +82,7 @@ async def handle_predict_message(update: Update, context: ContextTypes.DEFAULT_T
 
     response = ""
 
-    if text == 'Cancel':
+    if text.lower() == 'cancel':
         await update.message.reply_text('Cancelled predicting price.', reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
@@ -144,7 +144,7 @@ async def handle_multiple_symbol_predict_message(update: Update, context: Contex
 
     print(f'User: {update.message.id} in {message_type}: "{text}"')
 
-    if text == 'Cancel':
+    if text.lower() == 'cancel':
         await update.message.reply_text('Cancelled predicting price.', reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
         
@@ -171,7 +171,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = """
 This command will return current information of a specific cryptocurrency.
 Please type in symbol or name of cryptocurrency you want to check.
-Press /cancel or type Cancel to cancel finding information about currency.
+Press /cancel or type "cancel" to cancel finding information about currency.
 """
     await update.message.reply_text(
         response, 
@@ -192,7 +192,7 @@ async def handle_info_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     print(f'User: {update.message.id} in {message_type}: "{text}"')
 
-    if text == 'Cancel':
+    if text.lower() == 'cancel':
         await update.message.reply_text('Cancelled looking for cryptocurrency information.', reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
@@ -260,7 +260,7 @@ async def handle_multiple_symbol_info_message(update: Update, context: ContextTy
 
     print(f'User: {update.message.id} in {message_type}: "{text}"')
 
-    if text == 'Cancel':
+    if text.lower() == 'cancel':
         await update.message.reply_text('Cancelled looking for cryptocurrency information.', reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
         
