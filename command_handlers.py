@@ -98,6 +98,10 @@ async def handle_predict_message(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
     
+async def predict_cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Cancelled predicting price.', reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+    
 async def handle_multiple_symbol_predict_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type = update.message.chat.type
     text = update.message.text
@@ -137,7 +141,7 @@ Press /cancel or type Cancel to cancel finding information about currency.
     )
     return 1
 
-async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def info_cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Cancelled looking for cryptocurrency information.', reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
@@ -207,7 +211,7 @@ Low 24 H: {locale.currency(market.low_24h, grouping=True)}
         return ConversationHandler.END
 
 
-async def handle_multiple_symbol_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_multiple_symbol_info_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type = update.message.chat.type
     text = update.message.text
 

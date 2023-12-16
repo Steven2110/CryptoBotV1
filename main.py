@@ -38,13 +38,13 @@ if __name__ == '__main__':
     print('Bot is starting')
     app = Application.builder().token(tg_token).build()
 
-    conv_handler = ConversationHandler(
+    info_conv_handler = ConversationHandler(
         entry_points=[CommandHandler('info', info_command)],
         states={
             1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_info_message)],
-            2: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_multiple_symbol_message)]
+            2: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_multiple_symbol_info_message)]
         },
-        fallbacks=[CommandHandler('cancel', cancel_command)]
+        fallbacks=[CommandHandler('cancel', info_cancel_command)]
     )
 
     predict_conv_handler = ConversationHandler(
@@ -53,14 +53,14 @@ if __name__ == '__main__':
             1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_predict_message)],
             2: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_multiple_symbol_predict_message)]
         },
-        fallbacks=[CommandHandler('cancel', cancel_command)]
+        fallbacks=[CommandHandler('cancel', predict_cancel_command)]
     )
 
     # commands
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('list', list_crypto_command))
-    app.add_handler(conv_handler)
+    app.add_handler(info_conv_handler)
     app.add_handler(predict_conv_handler)
 
     # messages
