@@ -13,10 +13,41 @@ locale.setlocale(locale.LC_ALL, 'en_US')
 helper = APIHelper()
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Hello! This is bot for crypto price tracker!')
+    response = f"""
+Hello, {update.message.from_user.first_name}! This is bot used to get information about cryptocurrency!
+With this bot you can get the latest information of specific cryptocurrency, also you can predict how a cryptocurrency perform in the next 24 hours.
+
+To start using this bot you can choose one of our command:
+    • /list – to list top 100 cryptocurrencies
+    • /info – to get the latest information of specific cryptocurrency
+    • /predict – to predict next 24 hours price of a specific cryptocurrency
+    • /help – to list all available commands and how to use this bot
+"""
+    await update.message.reply_text(response)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Please type any text to start! Help menu will be here!')
+    response = """
+*List of commands:*
+    • /start    : to start the bot
+    • /help     : to show all available commands and how to use this bot
+    • /list     : to list top 100 cryptocurrencies
+    • /info     : to get the latest information of specific cryptocurrency
+    • /predict  : to predict next 24 hours price of a specific cryptocurrency
+
+*How to use bot:*
+1\. If you want to __check price__ of a specific cryptocurrency use command /info, but if you want to __predict price __ use command /predict\. Then type in your cryptocurrency symbol or name and send\. \(You can use /list for reference\)
+    a\) If there is more than one cryptocurrency with that symbol, then bot will send you a list of cryptocurrencies with that symbol along with it's name\. You can then type in the name of cryptocurrency you want to check or you can pick one from the inline keyboard that are located under the input box\.
+    b\) If there is only one cryptocurrency with that symbol or the name of cryptocurrency that you have sent from previous point exist, then you will get the necessary information or prediction from the bot\.
+        
+    • After you get the necessary information the bot will stop the conversation and will only be able to check again when you use one of these commands: /info /predict\.
+        
+    • If you want to cancel the checking process you can use command /cancel or press the command from inline keyboard located under your input box\. You can cancel the process from any step\.
+        
+PS: If the name or symbol of cryptocurrency that you have entered doesn't exist then bot will send you an error message but bot will still be in conversation and you can send the correct or existing cryptocurrency name or symbol, or you can send word "Cancel" or use command /cancel to cancel checking and exit the conversation\.
+    
+2\. If you want to check the list of top 100 cryptocurrencies then use command /list\.     
+"""
+    await update.message.reply_text(response, parse_mode="markdownv2")
 
 async def list_crypto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = ""
