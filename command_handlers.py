@@ -3,11 +3,19 @@ from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 
 import locale
-import json
 
 from API_helper import APIHelper
 from models import TokenModel, MarketModel
-from utils import get_token_from, get_token_with
+from utils import (
+    get_token_from, 
+    get_token_with, 
+    add_user_to_cache, 
+    add_user_message_to_cache, 
+    clear_message_cache_for_user, 
+    get_user_message_from_cache,
+    check_if_user_added_to_cache
+)
+from constants import MessageType
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 helper = APIHelper()
@@ -23,9 +31,13 @@ To start using this bot you can choose one of our command:
     • /predict – to predict next 24 hours price of a specific cryptocurrency
     • /help – to list all available commands and how to use this bot
 """
-    await update.message.reply_text(response)
+    helper.get_token_list()
+    add_user_to_cache(update.message.chat.id)
+    await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not check_if_user_added_to_cache(update.message.chat.id):
+        add_user_to_cache(update.message.chat.id)
     response = """
 *List of commands:*
     • /start    : to start the bot
@@ -50,6 +62,8 @@ PS: If the name or symbol of cryptocurrency that you have entered doesn't exist 
     await update.message.reply_text(response, parse_mode="markdownv2")
 
 async def list_crypto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not check_if_user_added_to_cache(update.message.chat.id):
+        add_user_to_cache(update.message.chat.id)
     response = ""
     tokens: [TokenModel] = helper.get_token_list_100()
     for i, token in enumerate(tokens[:100]):
@@ -58,6 +72,8 @@ async def list_crypto_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(f'This command will return all list of cryptocurrencies.\n{response}')
 
 async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not check_if_user_added_to_cache(update.message.chat.id):
+        add_user_to_cache(update.message.chat.id)
     response = """
 This command will return price prediction of a specific cryptocurrency whether it will rise or drop in the next 24 hours.
 Please type in symbol or name of cryptocurrency you want to check.
@@ -93,16 +109,19 @@ async def handle_predict_message(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text(response)
 
     if len(tokens_list) > 1:
-        response = f"There are multiple cryptocurrency with symbol or name *{text.upper()}*, please pick one of the symbol!"
+        response = f"There are multiple cryptocurrency with symbol or name *{text.upper()}*, please pick one of the symbol from keyboard or type in the number of cryptocurrency from the list or type in the full name of cryptocurrency!"
         keyboard_options = []
         row = []
+        cached_token = []
         for i, token in enumerate(tokens_list):
             response += f"\n{i + 1}. {token.symbol.upper()} – {token.name}"
+            cached_token.append(token.name)
             row.append(f"{token.name}")
             if i % 2 == 1:
                 keyboard_options.append(row)
                 row = []
 
+        add_user_message_to_cache(update.message.chat.id, MessageType.PREDICT, cached_token)
         if not keyboard_options or (row != [] and keyboard_options[-1] != row):
             keyboard_options.append(row)
 
@@ -111,7 +130,7 @@ async def handle_predict_message(update: Update, context: ContextTypes.DEFAULT_T
             response, 
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=keyboard_options, 
-                one_time_keyboard=False,
+                one_time_keyboard=True,
                 input_field_placeholder="Which one?"
             ),
             parse_mode=ParseMode.MARKDOWN
@@ -132,6 +151,12 @@ async def handle_predict_message(update: Update, context: ContextTypes.DEFAULT_T
         print(f"Bot: {response}")
 
         await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text(
+            "If you want to predict other cryptocurrency use /predict again!", 
+            reply_markup=ReplyKeyboardMarkup(
+                [['/predict']],
+                one_time_keyboard=True
+            ))
         return ConversationHandler.END
     
 async def predict_cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,10 +172,22 @@ async def handle_multiple_symbol_predict_message(update: Update, context: Contex
     if text.lower() == 'cancel':
         await update.message.reply_text('Cancelled predicting price.', reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
-        
-    token: TokenModel = get_token_with(name=text)
-    if not token:
-        await update.message.reply_text('Token with that name is not found. Please choose one of the option from the inline keyboard!')
+    
+    cached_token = get_user_message_from_cache(update.message.chat.id, MessageType.PREDICT)
+
+    try: 
+        index = int(text)
+        if index > len(cached_token):
+            response_text = f'That number is too large, you entered {index} while there are only {len(cached_token)} options. Please type in again the correct number of desired token or choose one from the keyboard or type in the full name of the cryptocurrency.'
+            await update.message.reply_text(response_text)
+        token_name = cached_token[index-1]
+        token: TokenModel = get_token_with(name=token_name)
+        if not token:
+            await update.message.reply_text('Cryptocurrency with that name is not found. Please choose one of the option from the keyboard or type in the number of desired cryptocurrency from the list or type in the full name of cryptocurrency!')
+    except:
+        token: TokenModel = get_token_with(name=text)
+        if not token:
+            await update.message.reply_text('Cryptocurrency with that name is not found. Please choose one of the option from the keyboard or type in the number of desired cryptocurrency from the list or type in the full name of cryptocurrency!')
 
     market: MarketModel = helper.get_price(token_id=token.id)
 
@@ -163,11 +200,21 @@ async def handle_multiple_symbol_predict_message(update: Update, context: Contex
     response = f"Price of {market.symbol.upper()} – {market.name} will {prediction}!"
     print(f"Bot: {response}")
 
+    clear_message_cache_for_user(update.message.chat.id)
+
     await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text(
+            "If you want to predict other cryptocurrency use /predict again!", 
+            reply_markup=ReplyKeyboardMarkup(
+                [['/predict']],
+                one_time_keyboard=True
+            ))
     return ConversationHandler.END
 
 
 async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not check_if_user_added_to_cache(update.message.chat.id):
+        add_user_to_cache(update.message.chat.id)
     response = """
 This command will return current information of a specific cryptocurrency.
 Please type in symbol or name of cryptocurrency you want to check.
@@ -203,16 +250,20 @@ async def handle_info_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(response)
 
     if len(tokens_list) > 1:
-        response = f"There are multiple cryptocurrency with symbol or name *{text.upper()}*, please pick one of the symbol!"
+        response = f"There are multiple cryptocurrency with symbol or name *{text.upper()}*, please pick one of the symbol from keyboard or type in the number of cryptocurrency from the list or type in the full name of cryptocurrency!"
         keyboard_options = []
         row = []
+        cached_token = []
         for i, token in enumerate(tokens_list):
             response += f"\n{i + 1}. {token.symbol.upper()} – {token.name}"
+            cached_token.append(token.name)
             row.append(f"{token.name}")
             if i % 2 == 1:
                 keyboard_options.append(row)
                 row = []
 
+        add_user_message_to_cache(update.message.chat.id, MessageType.INFO, cached_token)
+    
         if not keyboard_options or (row != [] and keyboard_options[-1] != row):
             keyboard_options.append(row)
 
@@ -221,7 +272,7 @@ async def handle_info_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             response, 
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=keyboard_options, 
-                one_time_keyboard=False,
+                one_time_keyboard=True,
                 input_field_placeholder="Which one?"
             ),
             parse_mode=ParseMode.MARKDOWN
@@ -251,6 +302,12 @@ Low 24 H: {locale.currency(market.low_24h, grouping=True)}
         print(f"Bot: {response}")
 
         await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+        await update.message.reply_text(
+            "If you want to get information of other cryptocurrency use /info again!", 
+            reply_markup=ReplyKeyboardMarkup(
+                [['/info']],
+                one_time_keyboard=True
+            ))
         return ConversationHandler.END
 
 
@@ -263,10 +320,22 @@ async def handle_multiple_symbol_info_message(update: Update, context: ContextTy
     if text.lower() == 'cancel':
         await update.message.reply_text('Cancelled looking for cryptocurrency information.', reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
-        
-    token: TokenModel = get_token_with(name=text)
-    if not token:
-        await update.message.reply_text('Token with that name is not found. Please choose one of the option from the inline keyboard!')
+    
+    cached_token = get_user_message_from_cache(update.message.chat.id, MessageType.INFO)
+
+    try: 
+        index = int(text)
+        if index > len(cached_token):
+            response_text = f'That number is too large, you entered {index} while there are only {len(cached_token)} options. Please type in again the correct number of desired token or choose one from the keyboard or type in the full name of the cryptocurrency.'
+            await update.message.reply_text(response_text)
+        token_name = cached_token[index-1]
+        token: TokenModel = get_token_with(name=token_name)
+        if not token:
+            await update.message.reply_text('Cryptocurrency with that name is not found. Please choose one of the option from the keyboard or type in the number of desired cryptocurrency from the list or type in the full name of cryptocurrency!')
+    except:
+        token: TokenModel = get_token_with(name=text)
+        if not token:
+            await update.message.reply_text('Cryptocurrency with that name is not found. Please choose one of the option from the keyboard or type in the number of desired cryptocurrency from the list or type in the full name of cryptocurrency!')
 
     market: MarketModel = helper.get_price(token_id=token.id)
 
@@ -287,6 +356,13 @@ Low 24 H: {locale.currency(market.low_24h, grouping=True)}
         """
 
     print(f"Bot: {response}")
+    clear_message_cache_for_user(update.message.chat.id)
 
     await update.message.reply_text(response, reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text(
+            "If you want to get information of other cryptocurrency use /info again!", 
+            reply_markup=ReplyKeyboardMarkup(
+                [['/info']],
+                one_time_keyboard=True
+            ))
     return ConversationHandler.END

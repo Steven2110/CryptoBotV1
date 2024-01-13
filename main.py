@@ -1,3 +1,5 @@
+import os
+
 import telegram
 from telegram import Update
 from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
@@ -36,6 +38,9 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     print('Bot is starting')
+    if os.stat('coins_data.json').st_size == 0:
+        helper.get_token_list()
+
     app = Application.builder().token(tg_token).build()
 
     info_conv_handler = ConversationHandler(
@@ -44,7 +49,8 @@ if __name__ == '__main__':
             1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_info_message)],
             2: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_multiple_symbol_info_message)]
         },
-        fallbacks=[CommandHandler('cancel', info_cancel_command)]
+        fallbacks=[CommandHandler('cancel', info_cancel_command)],
+        allow_reentry=True
     )
 
     predict_conv_handler = ConversationHandler(
@@ -53,7 +59,8 @@ if __name__ == '__main__':
             1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_predict_message)],
             2: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_multiple_symbol_predict_message)]
         },
-        fallbacks=[CommandHandler('cancel', predict_cancel_command)]
+        fallbacks=[CommandHandler('cancel', predict_cancel_command)],
+        allow_reentry=True
     )
 
     # commands

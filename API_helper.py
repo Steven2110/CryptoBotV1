@@ -1,7 +1,9 @@
-import requests, json
+import requests, json, os
 from types import SimpleNamespace
 from utils import get_cg_token
 from models import *
+
+from datetime import datetime
 
 class APIHelper:
     _BASE_URL = 'https://api.coingecko.com/api/v3'
@@ -16,7 +18,16 @@ class APIHelper:
     _LIST_ENDPOINT = '/coins/list'
     _MARKETS_ENDPOINT = '/coins/markets'
 
+    _DATETIME_FORMAT = '%d.%m.%Y %H:%M:%S'
+
     def get_token_list(self) -> [TokenModel]:
+        if os.stat('coins_data.json').st_size != 0:
+            cache_file = open('coins_data.json', 'r')
+            json_data = json.load(cache_file)
+
+            if datetime.strptime(json_data['last_updated'], self._DATETIME_FORMAT).date() == datetime.today().date():
+                return
+        
         url = self._BASE_URL + self._LIST_ENDPOINT
 
         response = requests.get(url=url, headers=self._HEADERS)
@@ -24,13 +35,15 @@ class APIHelper:
         if response.status_code != 200:
             return []
         
-        response_json = response.json()
+        response_json = dict()
+        response_json['last_updated'] = datetime.now().strftime(self._DATETIME_FORMAT)
+        response_json['list'] = response.json()
 
         with open('coins_data.json', "w") as cache_file:
             json.dump(response_json, cache_file)
 
         coins = []
-        for coin in response_json:
+        for coin in response_json['list']:
             coins.append(TokenModel(**coin))
 
         return coins
